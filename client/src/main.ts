@@ -19,6 +19,7 @@ const response = await fetch('http://localhost:3000/compile?name=matrix_transfor
 });
 */
 
+const memoryByteLength:number = 4000000;
 const instance = await getWasmObject("matrix_transformer",source);
 
 /*
@@ -37,7 +38,7 @@ const { instance } = await WebAssembly.instantiate(wasmBuffer,{
 });
 */
 
-const obj:any = instance.exports;
+
 
 const arr = new Float32Array(instance.buffer, 0, 8);
 arr.set([10, 20, 30, 40, 50, 60, 70, 80]);
@@ -45,13 +46,16 @@ arr.set([10, 20, 30, 40, 50, 60, 70, 80]);
 console.log("Avant :", arr); // [10, 20, 30, ...]
 
 // Appelle la fonction Rust avec le pointeur de départ (offset 0) et la longueur
-obj.incr_buffer(0, arr.length);
+instance.incr_buffer(0, arr.length);
 
 console.log("Après :", arr);
 
 
 
-async function getWasmObject(name:string,rustCode:string, mode = "auto") {
+async function getWasmObject(name:string,rustCode:string,memoryByteLength:number=0, mode = "auto"):Promise<{
+  buffer:ArrayBuffer,
+  [key:string]:any,
+}> {
   // mode: "auto", "dev", "prod"
   if (mode === "prod") {
     // prod: charge le fichier local
@@ -61,13 +65,14 @@ async function getWasmObject(name:string,rustCode:string, mode = "auto") {
     ]);
     if (!buffer) throw new Error("WASM not found: " + name);
 
-    const memory = new WebAssembly.Memory({ initial: parseInt(meta.pages)  });
+    const nbPage = Math.max(Math.ceil(memoryByteLength / 65536) , parseInt(meta.pages));
+    const memory = new WebAssembly.Memory({ initial: nbPage  });
     const { instance } = await WebAssembly.instantiate(buffer,{
       env:{memory}
     });
 
     return {
-      exports:instance.exports,
+      ...instance.exports,
       buffer:memory.buffer
     }
   }
@@ -86,15 +91,16 @@ async function getWasmObject(name:string,rustCode:string, mode = "auto") {
     }
 
     const memoryPages = resp.headers.get('X-WASM-Memory-Pages');
-    const memory = new WebAssembly.Memory({ initial: parseInt(memoryPages as string)  });
-
+    const nbPage = Math.max(Math.ceil(memoryByteLength / 65536) , parseInt(memoryPages as string));
+    const memory = new WebAssembly.Memory({ initial: nbPage  });
+    
     const wasmBuffer = await resp.arrayBuffer();
     const { instance } = await WebAssembly.instantiate(wasmBuffer,{
       env:{memory}
     });
 
     return {
-      exports:instance.exports,
+      ...instance.exports,
       buffer:memory.buffer,
     }
   }
@@ -102,8 +108,8 @@ async function getWasmObject(name:string,rustCode:string, mode = "auto") {
 
   // "auto" : dev si localhost, prod sinon
   if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-    return getWasmObject(name,rustCode, "dev");
+    return getWasmObject(name,rustCode,memoryByteLength, "dev");
   } else {
-    return getWasmObject(name,rustCode, "prod");
+    return getWasmObject(name,rustCode,memoryByteLength, "prod");
   }
 }
