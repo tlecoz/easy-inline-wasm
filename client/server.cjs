@@ -69,6 +69,7 @@ app.post('/compile', upload.none(), async (req, res) => {
     if (!fs.existsSync(wasmDir)) fs.mkdirSync(wasmDir, { recursive: true });
     const publicPath = path.join(wasmDir, name + '.wasm');
     fs.writeFileSync(publicPath, fs.readFileSync(wasmFile));
+    fs.writeFileSync(publicPath + '.json', JSON.stringify({ pages: size }))
     console.log("WASM sauvegardé dans :", publicPath);
 
   } catch (err) {
