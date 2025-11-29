@@ -1,4 +1,6 @@
-# WASM On-Demand Workflow (Rust + TypeScript)
+
+
+# easy-inline-wasm
 
 This repository contains a minimal workflow that lets you use **Rust-compiled WebAssembly** inside a TypeScript project **almost like WGSL** — by writing Rust code as a string, compiling it on demand via a local Node.js server, and loading it dynamically on the client.
 
