@@ -16,7 +16,6 @@ The goal is to keep WASM usage **simple, stable and static-function-like**, with
   - checks if a WASM binary already exists  
   - **or** instantly recompiles the Rust source (`wasm32-unknown-unknown`)
 - The server writes the compiled `.wasm` file into the client’s `public/` folder.
-- This file change triggers a **Vite page reload**.
 - The client then loads and uses the module’s exported functions.
 
 This gives a workflow where Rust feels like a collection of static functions with raw pointers and numbers — no accidental JS allocations or hidden complexity.
